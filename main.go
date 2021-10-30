@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -53,6 +54,19 @@ func run() error {
 				},
 			},
 		},
+		Before: func(c *cli.Context) error {
+			// Before performing any operations, ensure that all required directories exist
+			dataDir := c.String("data-dir")
+			if dataDir == "" {
+				return errors.New("data-dir cannot be empty")
+			}
+
+			if err := createDirIfNotExists(filepath.Join(dataDir, "pads")); err != nil {
+				return err
+			}
+
+			return nil
+		},
 	}
 
 	if err := app.Run(os.Args); err != nil {
@@ -87,10 +101,6 @@ func handleEditTmpFile(c *cli.Context) error {
 }
 
 func handleEditScratchPad(c *cli.Context) error {
-	if err := createDirIfNotExists(c.String("data-dir")); err != nil {
-		return err
-	}
-
 	filename := filepath.Join(c.String("data-dir"), "scratch.md")
 
 	if c.Bool("fresh") {
