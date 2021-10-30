@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/urfave/cli/v2"
 )
@@ -30,14 +31,20 @@ func run() error {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "editor",
+				Aliases: []string{"e"},
 				Value:   "vim",
 				Usage:   "A terminal command to open the desired text editor",
-				Aliases: []string{"e"},
 			},
 			&cli.StringFlag{
 				Name:  "data-dir",
 				Value: defaultDataDir,
 				Usage: "The directory to use for story scratch pads",
+			},
+			&cli.StringFlag{
+				Name:    "ext",
+				Aliases: []string{"x"},
+				Value:   "md",
+				Usage:   "Specify the file extension",
 			},
 		},
 		Commands: []*cli.Command{
@@ -55,13 +62,17 @@ func run() error {
 			},
 		},
 		Before: func(c *cli.Context) error {
-			// Before performing any operations, ensure that all required directories exist
 			dataDir := c.String("data-dir")
 			if dataDir == "" {
 				return errors.New("data-dir cannot be empty")
 			}
 
+			// Before performing any operations, ensure that all required directories exist
 			if err := createDirIfNotExists(filepath.Join(dataDir, "pads")); err != nil {
+				return err
+			}
+
+			if err := createDirIfNotExists(filepath.Join(dataDir, "defaults")); err != nil {
 				return err
 			}
 
@@ -89,8 +100,16 @@ func createDirIfNotExists(dir string) error {
 	return os.MkdirAll(dir, 0755)
 }
 
+func buildFileName(filename, ext string) string {
+	if ext == "" {
+		return filename
+	}
+
+	return fmt.Sprintf("%s.%s", filename, strings.TrimLeft(ext, "."))
+}
+
 func handleEditTmpFile(c *cli.Context) error {
-	f, err := os.CreateTemp("", "scratch-")
+	f, err := os.CreateTemp("", buildFileName("scratch-*", c.String("ext")))
 	if err != nil {
 		return err
 	}
@@ -101,7 +120,7 @@ func handleEditTmpFile(c *cli.Context) error {
 }
 
 func handleEditScratchPad(c *cli.Context) error {
-	filename := filepath.Join(c.String("data-dir"), "scratch.md")
+	filename := filepath.Join(c.String("data-dir"), "defaults", buildFileName("scratch", c.String("ext")))
 
 	if c.Bool("fresh") {
 		err := os.WriteFile(filename, []byte{}, 0755)
