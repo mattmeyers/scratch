@@ -72,7 +72,7 @@ func run() error {
 				Action: handleAddPad,
 			},
 			{
-				Name:   "list",
+				Name:   "ls",
 				Usage:  "List all pads",
 				Action: handleListPads,
 			},
@@ -80,6 +80,18 @@ func run() error {
 				Name:   "edit",
 				Usage:  "Edit a pad",
 				Action: handleEditPad,
+			},
+			{
+				Name:   "rm",
+				Usage:  "Remove a pad",
+				Action: handleRemovePad,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "recursive",
+						Aliases: []string{"r"},
+						Usage:   "Recursively delete a directory",
+					},
+				},
 			},
 		},
 		Before: func(c *cli.Context) error {
@@ -205,6 +217,25 @@ func handleEditPad(c *cli.Context) error {
 
 	filename := filepath.Join(c.String("data-dir"), "pads", padName)
 	return editFile(c.String("editor"), filename)
+}
+
+func handleRemovePad(c *cli.Context) error {
+	if c.NArg() != 1 {
+		return errors.New("pad name required")
+	}
+
+	path := filepath.Join(c.String("data-dir"), "pads", c.Args().First())
+
+	f, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	if f.IsDir() && !c.Bool("recursive") {
+		return errors.New("must recursively delete directories")
+	}
+
+	return os.RemoveAll(path)
 }
 
 func addPad(dataDir, padName string) error {
