@@ -58,7 +58,18 @@ func run() error {
 						Usage: "Open a fresh scratch pad (this irreversibly deletes the old data)",
 						Value: false,
 					},
+					&cli.StringFlag{
+						Name:    "ext",
+						Aliases: []string{"x"},
+						Value:   "md",
+						Usage:   "Specify the file extension",
+					},
 				},
+			},
+			{
+				Name:   "add",
+				Usage:  "Create a new scratch pad",
+				Action: handleAddPad,
 			},
 		},
 		Before: func(c *cli.Context) error {
@@ -120,7 +131,11 @@ func handleEditTmpFile(c *cli.Context) error {
 }
 
 func handleEditScratchPad(c *cli.Context) error {
-	filename := filepath.Join(c.String("data-dir"), "defaults", buildFileName("scratch", c.String("ext")))
+	filename := filepath.Join(
+		c.String("data-dir"),
+		"defaults",
+		buildFileName("scratch", c.String("ext")),
+	)
 
 	if c.Bool("fresh") {
 		err := os.WriteFile(filename, []byte{}, 0755)
@@ -130,6 +145,36 @@ func handleEditScratchPad(c *cli.Context) error {
 	}
 
 	return editFile(c.String("editor"), filename)
+}
+
+func handleAddPad(c *cli.Context) error {
+	if c.NArg() == 0 {
+		return errors.New("pad name(s) required")
+	}
+
+	for _, pad := range c.Args().Slice() {
+		if err := addPad(c.String("data-dir"), pad); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func addPad(dataDir, padName string) error {
+	if path := filepath.Dir(padName); path != "." {
+		err := createDirIfNotExists(filepath.Join(dataDir, "pads", path))
+		if err != nil {
+			return err
+		}
+	}
+
+	f, err := os.Create(filepath.Join(dataDir, "pads", padName))
+	if err != nil {
+		return err
+	}
+
+	return f.Close()
 }
 
 func editFile(editor, filename string) error {
