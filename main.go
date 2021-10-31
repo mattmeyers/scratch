@@ -71,6 +71,11 @@ func run() error {
 				Usage:  "Create a new scratch pad",
 				Action: handleAddPad,
 			},
+			{
+				Name:   "list",
+				Usage:  "List all pads",
+				Action: handleListPads,
+			},
 		},
 		Before: func(c *cli.Context) error {
 			dataDir := c.String("data-dir")
@@ -156,6 +161,24 @@ func handleAddPad(c *cli.Context) error {
 		if err := addPad(c.String("data-dir"), pad); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func handleListPads(c *cli.Context) error {
+	entries, err := os.ReadDir(filepath.Join(c.String("data-dir"), "pads", c.Args().First()))
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() {
+			name += "/"
+		}
+
+		fmt.Println(name)
 	}
 
 	return nil
