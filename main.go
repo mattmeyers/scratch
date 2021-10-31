@@ -76,6 +76,11 @@ func run() error {
 				Usage:  "List all pads",
 				Action: handleListPads,
 			},
+			{
+				Name:   "edit",
+				Usage:  "Edit a pad",
+				Action: handleEditPad,
+			},
 		},
 		Before: func(c *cli.Context) error {
 			dataDir := c.String("data-dir")
@@ -182,6 +187,24 @@ func handleListPads(c *cli.Context) error {
 	}
 
 	return nil
+}
+
+func handleEditPad(c *cli.Context) error {
+	if c.NArg() != 1 {
+		return errors.New("pad name required")
+	}
+
+	padName := c.Args().First()
+
+	if path := filepath.Dir(padName); path != "." {
+		err := createDirIfNotExists(filepath.Join(c.String("data-dir"), "pads", path))
+		if err != nil {
+			return err
+		}
+	}
+
+	filename := filepath.Join(c.String("data-dir"), "pads", padName)
+	return editFile(c.String("editor"), filename)
 }
 
 func addPad(dataDir, padName string) error {
