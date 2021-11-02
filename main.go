@@ -126,7 +126,7 @@ func getDefaultDataDir() (string, error) {
 		return "", err
 	}
 
-	return filepath.Join(home, "scratch"), nil
+	return filepath.Join(home, ".scratch"), nil
 }
 
 func createDirIfNotExists(dir string) error {
