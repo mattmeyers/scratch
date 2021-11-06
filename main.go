@@ -142,6 +142,10 @@ func buildFileName(filename, ext string) string {
 }
 
 func handleEditTmpFile(c *cli.Context) error {
+	if c.NArg() > 0 {
+		return fmt.Errorf("unkown command: %s", c.Args().First())
+	}
+
 	f, err := os.CreateTemp("", buildFileName("scratch-*", c.String("ext")))
 	if err != nil {
 		return err
